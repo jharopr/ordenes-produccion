@@ -16,5 +16,6 @@
     "migration:run": "npm run migration:run -w apps/backend",
     "migration:revert": "npm run migration:revert -w apps/backend",
     "migration:show": "npm run migration:show -w apps/backend"
+    ,"seed": "npm run seed -w apps/backend"
   }
 }

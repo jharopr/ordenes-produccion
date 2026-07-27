@@ -1,55 +1,33 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'node:path';
+import { AppModule } from './app.module';
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { SupabaseModule } from './supabase/supabase.module';
+async function bootstrap() {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useStaticAssets(join(process.cwd(), 'apps', 'backend', 'uploads'), {
+    prefix: '/uploads/',
+  });
+  app.setGlobalPrefix('api');
+  app.enableCors();
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }));
 
-@Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: [
-        'apps/backend/.env',
-        '.env',
-      ],
-    }),
+  const config = new DocumentBuilder()
+    .setTitle('Órdenes de Producción')
+    .setDescription('API del sistema de órdenes de producción')
+    .setVersion('1.0')
+    .addTag('Clientes')
+    .addTag('Ubicaciones')
+    .addTag('Órdenes de producción')
+    .build();
+  SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config));
 
-    TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-
-        url: configService.getOrThrow<string>('DATABASE_URL'),
-
-        autoLoadEntities: true,
-
-        synchronize:
-          configService.get<string>('DATABASE_SYNCHRONIZE') === 'true',
-
-        ssl:
-          configService.get<string>('DATABASE_SSL') === 'true'
-            ? {
-                rejectUnauthorized: false,
-              }
-            : false,
-
-        logging:
-          configService.get<string>('DATABASE_LOGGING') === 'true',
-      }),
-    }),
-
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
-      exclude: ['/api/{*path}'],
-    }),
-
-    SupabaseModule,
-  ],
-  controllers: [AppController],
-  providers: [AppService],
-})
-export class AppModule {}
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
+}
+void bootstrap();

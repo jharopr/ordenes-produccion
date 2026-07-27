@@ -1,46 +1,37 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { join } from 'node:path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { SupabaseModule } from './supabase/supabase.module';
 import { CustomersModule } from './customers/customers.module';
 import { LocationsModule } from './locations/locations.module';
 import { ProductionOrdersModule } from './production-orders/production-orders.module';
-import { InvoicesModule } from './invoices/invoices.module';
-import { FilesModule } from './files/files.module';
-import { PdfModule } from './pdf/pdf.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['apps/backend/.env', '.env'] }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
+      useFactory: (config: ConfigService) => ({
         type: 'postgres',
-        url: configService.getOrThrow<string>('DATABASE_URL'),
-
+        url: config.getOrThrow<string>('DATABASE_URL'),
         autoLoadEntities: true,
-
-        synchronize:
-          configService.get<string>('NODE_ENV') === 'development',
-
-        ssl:
-          configService.get<string>('DATABASE_SSL') === 'true'
-            ? { rejectUnauthorized: false }
-            : false,
+        synchronize: config.get<string>('DATABASE_SYNCHRONIZE') === 'true',
+        ssl: config.get<string>('DATABASE_SSL') === 'true'
+          ? { rejectUnauthorized: false }
+          : false,
+        logging: config.get<string>('DATABASE_LOGGING') === 'true',
       }),
     }),
-    SupabaseModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+      exclude: ['/api/{*path}'],
+    }),
     CustomersModule,
     LocationsModule,
     ProductionOrdersModule,
-    InvoicesModule,
-    FilesModule,
-    PdfModule
   ],
   controllers: [AppController],
   providers: [AppService],
