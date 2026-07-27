@@ -1,0 +1,17 @@
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ordenes-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ordenes_produccion
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5440:5432"
+    volumes:
+      - ordenes_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  ordenes_postgres_data:
