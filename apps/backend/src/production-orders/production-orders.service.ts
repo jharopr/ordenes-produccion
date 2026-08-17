@@ -127,10 +127,6 @@ export class ProductionOrdersService {
       manager.merge(ProductionOrder, existing, {
         ...dto, subtotal: money(totals.subtotal), discount: money(totals.discount), total: money(totals.total),
         paymentStatus: resolvePaymentStatus(paidAmount, totals.total),
-        items: items.map((item, index) => manager.create(ProductionOrderItem, {
-          ...item, displayOrder: item.displayOrder ?? index,
-          subtotal: money(itemSubtotal(item)),
-        })),
         ...(dto.invoice !== undefined ? {
           invoices: dto.invoice ? [manager.create(Invoice, {
             invoiceNumber: dto.invoice.invoiceNumber ?? null,
@@ -139,6 +135,10 @@ export class ProductionOrdersService {
           })] : [],
         } : {}),
       });
+      existing.items = items.map((item, index) => manager.create(ProductionOrderItem, {
+        ...item, displayOrder: item.displayOrder ?? index,
+        subtotal: money(itemSubtotal(item)),
+      }));
       return manager.save(existing);
     });
   }

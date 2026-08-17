@@ -226,7 +226,25 @@ function OrderForm() {
   const locations = useQuery({ queryKey: ['locations'], queryFn: () => api.get<Location[]>('/locations').then((r) => r.data) });
   const order = useQuery({ queryKey: ['order', id], enabled: !!id, queryFn: () => api.get<ProductionOrder>(`/production-orders/${id}`).then((r) => r.data) });
   useEffect(() => {
-    if (order.data) reset({ ...order.data, locationId: order.data.locationId ?? '' });
+    if (order.data) {
+      reset({
+        customerId: order.data.customerId,
+        locationId: order.data.locationId ?? '',
+        title: order.data.title,
+        executionAddress: order.data.executionAddress ?? '',
+        startDate: order.data.startDate?.slice(0, 10) ?? '',
+        estimatedCompletionDate: order.data.estimatedCompletionDate?.slice(0, 10) ?? '',
+        requestedBy: order.data.requestedBy ?? '',
+        notes: order.data.notes ?? '',
+        discount: String(order.data.discount ?? 0),
+        items: order.data.items.map((i) => ({
+          description: i.description,
+          quantity: String(i.quantity),
+          unitPrice: String(i.unitPrice),
+          displayOrder: i.displayOrder,
+        })),
+      });
+    }
   }, [order.data, reset]);
   useEffect(() => {
     if (!id && defaultCustomer.data) setValue('customerId', defaultCustomer.data.id);
